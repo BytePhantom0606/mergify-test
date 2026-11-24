@@ -1,0 +1,20 @@
+name: oidc-test
+on: workflow_dispatch
+permissions:
+  id-token: write
+jobs:
+  mint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mint OIDC tokens (varied audiences) and call Mergify exchange
+        run: |
+          echo "== repository_owner claim (which org GitHub signs) =="
+          D=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=mergify" | jq -r '.value' | cut -d. -f2 | tr '_-' '/+' | base64 -d 2>/dev/null)
+          echo "$D" | jq '{repository,repository_owner,aud,sub}' 2>/dev/null || echo "$D"
+          echo "=================================================="
+          for AUD in "mergify" "https://api.mergify.com" "bytephantom06" "197271137"; do
+            T=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD" | jq -r '.value')
+            echo "===== audience=$AUD ====="
+            curl -s -o - -w " [HTTP %{http_code}]\n" -X POST https://api.mergify.com/v1/ci/oidc/exchange -H "Content-Type: application/json" -d "{\"id_token\":\"$T\"}"
+            echo
+          done
